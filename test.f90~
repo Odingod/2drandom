@@ -1,0 +1,5 @@
+PROGRAM test
+  IMPLICIT NONE
+  INTEGER, ::  h(2,2) ! height
+  WRITE (*,*, SIZE(h))
+END PROGRMAM
