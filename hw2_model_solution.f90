@@ -10,11 +10,12 @@ PROGRAM bd
   REAL(KIND(1.d0)), ALLOCATABLE ::  w(:) ! roughness(^2)
   INTEGER :: i1, i2, j, N, Nh, Nr, ii, jj, k
   CHARACTER(len=40) :: w_file, h_file
-  LOGICAL :: do_sr=.TRUE.
+  INTEGER :: do_sr=1
+  LOGICAL :: cont=.FALSE.
   REAL :: r
   CALL init_random_seed()
 
-  WRITE(*,*) 'Do SR? (false makes RD), say t or f '
+  WRITE(*,*) '1 sr, 2 rd, 3 mr, 4 sticky'
   READ(*,*) do_sr
   WRITE(*,*) 'Number of sites (horizontal size of cluster) [try 100]'
   READ(*,*) N
@@ -25,12 +26,18 @@ PROGRAM bd
   READ(*,*) Nr
   ALLOCATE(w(Nh))
 
-  IF (do_sr) THEN 
+  IF (do_sr == 1) THEN 
      WRITE(w_file,'(a,i0,a)') 'sr_w_average', N, '.txt'
      WRITE(h_file,'(a,i0,a)') 'sr_h_single', N, '.txt'
-  ELSE
+  ELSE IF (do_sr == 2) THEN
      WRITE(w_file,'(a,i0,a)') 'w_average', N, '.txt'  
      WRITE(h_file,'(a,i0,a)') 'h_single', N, '.txt'   
+  ELSE IF (do_sr == 3) THEN
+     WRITE(w_file,'(a,i0,a)') 'mr_w_average', N, '.txt'  
+     WRITE(h_file,'(a,i0,a)') 'mr_h_single', N, '.txt'   
+  ELSE IF (do_sr == 4) THEN
+     WRITE(w_file,'(a,i0,a)') 'sticky_w_average', N, '.txt'  
+     WRITE(h_file,'(a,i0,a)') 'sticky_h_single', N, '.txt'   
   END IF
   OPEN(123,file=w_file)
   OPEN(124,file=h_file)
@@ -44,124 +51,29 @@ PROGRAM bd
            DO k=1 , N
               i1=random_site()
               i2=random_site()
-              IF (do_sr) THEN
-                 IF (h(i1-1,i2)<h(i1,i2) .AND. h(i1+1,i2)<h(i1,i2) .AND. h(i1,i2-1)<h(i1,i2) .AND. h(i1,i2+1)<h(i1,i2)) THEN
-                    CALL RANDOM_NUMBER(r)
-                    IF (r>.75) THEN
-                       i1=i1+1
-                    ELSE IF (r>0.5) THEN
-                       i1=i1-1
-                    ELSE IF (r>0.25) THEN
-                       i2=i2+1
-                    ELSE 
-                       i2=i2-1
-                    END IF
-                 ELSE IF (h(i1-1,i2)<h(i1,i2) .AND. h(i1+1,i2)<h(i1,i2) .AND. h(i1,i2-1)<h(i1,i2)) THEN !EI Y
-                    CALL RANDOM_NUMBER(r)
-                    IF (r>.66) THEN
-                       i1=i1+1
-                    ELSE IF (r>0.33) THEN
-                       i1=i1-1
-                    ELSE 
-                       i2=i2-1
-                    END IF
-                 ELSE IF (h(i1-1,i2)<h(i1,i2) .AND. h(i1+1,i2)<h(i1,i2) .AND. h(i1,i2+1)<h(i1,i2)) THEN !EI A
-                    CALL RANDOM_NUMBER(r)
-                    IF (r>.66) THEN
-                       i1=i1+1
-                    ELSE IF (r>0.33) THEN
-                       i1=i1-1
-                    ELSE 
-                       i2=i2+1
-                    END IF 
-                 ELSE IF (h(i1-1,i2)<h(i1,i2) .AND. h(i1,i2-1)<h(i1,i2) .AND. h(i1,i2+1)<h(i1,i2)) THEN !EI O
-                    CALL RANDOM_NUMBER(r)
-                    IF (r>.66) THEN
-                       i2=i2+1
-                    ELSE IF (r>0.33) THEN
-                       i1=i1-1
-                    ELSE 
-                       i2=i2-1
-                    END IF 
-                 ELSE IF (h(i1+1,i2)<h(i1,i2) .AND. h(i1,i2-1)<h(i1,i2) .AND. h(i1,i2+1)<h(i1,i2)) THEN !EI V
-                    CALL RANDOM_NUMBER(r)
-                    IF (r>.66) THEN
-                       i1=i1+1
-                    ELSE IF (r>0.33) THEN
-                       i2=i2+1
-                    ELSE 
-                       i2=i2-1
-                    END IF
-                 ELSE IF (h(i1+1,i2)<h(i1,i2) .AND. h(i1,i2-1)<h(i1,i2)) THEN !OA
-                    CALL RANDOM_NUMBER(r)
-                    IF (r>.5) THEN
-                       i1=i1+1
-                    ELSE 
-                       i2=i2-1
-                    END IF
-                 ELSE IF (h(i1+1,i2)<h(i1,i2) .AND. h(i1,i2+1)<h(i1,i2)) THEN !OY
-                    CALL RANDOM_NUMBER(r)
-                    IF (r>.5) THEN
-                       i1=i1+1
-                    ELSE 
-                       i2=i2+1
-                    END IF
-                 ELSE IF (h(i1+1,i2)<h(i1,i2) .AND. h(i1-1,i2)<h(i1,i2)) THEN !OV
-                    CALL RANDOM_NUMBER(r)
-                    IF (r>.5) THEN
-                       i1=i1+1
-                    ELSE 
-                       i1=i1-1
-                    END IF
-                 ELSE IF (h(i1-1,i2)<h(i1,i2) .AND. h(i1,i2+1)<h(i1,i2)) THEN !YV
-                    CALL RANDOM_NUMBER(r)
-                    IF (r>.5) THEN
-                       i1=i1-1
-                    ELSE 
-                       i2=i2+1
-                    END IF
-                 ELSE IF (h(i1,i2+1)<h(i1,i2) .AND. h(i1,i2-1)<h(i1,i2)) THEN !YA
-                    CALL RANDOM_NUMBER(r)
-                    IF (r>.5) THEN
-                       i2=i2+1
-                    ELSE 
-                       i2=i2-1
-                    END IF
-                 ELSE IF (h(i1-1,i2)<h(i1,i2) .AND. h(i1,i2-1)<h(i1,i2)) THEN !VA
-                    CALL RANDOM_NUMBER(r)
-                    IF (r>.5) THEN
-                       i1=i1-1
-                    ELSE 
-                       i2=i2-1
-                    END IF
-                 ELSE IF (h(i1-1,i2)<h(i1,i2)) THEN !V
-                    i1=i1-1
-                 ELSE IF (h(i1+1,i2)<h(i1,i2)) THEN !O
-                    i1=i1+1
-                 ELSE IF (h(i1,i2-1)<h(i1,i2)) THEN !A 
-                    i2=i2-1
-                 ELSE IF (h(i1,i2+1)<h(i1,i2)) THEN !Y
-                    i2=i2+1
-                 END IF
-                    
-
-                    
-                    
-               
-                 
-                 IF (i1==0) i1=N
-                 IF (i1==N+1) i1=1
-                 IF (i2==0) i2=N
-                 IF (i2==N+1) i2=1
-
+              IF (do_sr==1) THEN
+                 cont=relax_once(i1,i2,N)
                  h(i1,i2)=h(i1,i2)+1 ! increase at selected column
                  IF (i1==1) h(N+1,i2)=h(1,i2) ! These take care of 
                  IF (i1==N) h(0,i2)=h(N,i2)   ! the periodic boundary conditions.
                  IF (i2==1) h(i1,N+1)=h(i1,1) ! These take care of 
                  IF (i2==N) h(i1,0)=h(i1,N)   ! the periodic boundary conditions.
-              ELSE
-                 Write(*,*) "Doing RD"
+              ELSE IF (do_sr==2) THEN
                  h(i1,i2)=h(i1,i2)+1 ! This is the rule of RD.
+              ELSE IF (do_sr==3) THEN
+                 DO WHILE (relax_once(i1,i2,N))
+                 END DO
+                 h(i1,i2)=h(i1,i2)+1 ! increase at selected column
+                 IF (i1==1) h(N+1,i2)=h(1,i2) ! These take care of 
+                 IF (i1==N) h(0,i2)=h(N,i2)   ! the periodic boundary conditions.
+                 IF (i2==1) h(i1,N+1)=h(i1,1) ! These take care of 
+                 IF (i2==N) h(i1,0)=h(i1,N)   ! the periodic boundary conditions.
+              ELSe IF(do_sr == 4) THEN
+                 h(i1,i2) = MAX(h(i1,i2)+1,h(i1+1,i2),h(i1-1,i2),h(i1,i2+1),h(i1,i2-1))
+                 IF (i1==1) h(N+1,i2)=h(1,i2) ! These take care of 
+                 IF (i1==N) h(0,i2)=h(N,i2)   ! the periodic boundary conditions.
+                 IF (i2==1) h(i1,N+1)=h(i1,1) ! These take care of 
+                 IF (i2==N) h(i1,0)=h(i1,N)   ! the periodic boundary conditions.
               END IF
            END DO
         END DO
@@ -178,6 +90,117 @@ PROGRAM bd
   
   WRITE(*,*) 'Data in ', w_file
 CONTAINS
+  FUNCTION relax_once(i1,i2, N)
+    LOGICAL :: relax_once
+    INTEGER :: i1,i2, N
+    relax_once = .TRUE.
+    IF (h(i1-1,i2)<h(i1,i2) .AND. h(i1+1,i2)<h(i1,i2) .AND. h(i1,i2-1)<h(i1,i2) .AND. h(i1,i2+1)<h(i1,i2)) THEN
+       CALL RANDOM_NUMBER(r)
+       IF (r>.75) THEN
+          i1=i1+1
+       ELSE IF (r>0.5) THEN
+          i1=i1-1
+       ELSE IF (r>0.25) THEN
+          i2=i2+1
+       ELSE 
+          i2=i2-1
+       END IF
+    ELSE IF (h(i1-1,i2)<h(i1,i2) .AND. h(i1+1,i2)<h(i1,i2) .AND. h(i1,i2-1)<h(i1,i2)) THEN !EI Y
+       CALL RANDOM_NUMBER(r)
+       IF (r>.66) THEN
+          i1=i1+1
+       ELSE IF (r>0.33) THEN
+          i1=i1-1
+       ELSE 
+          i2=i2-1
+       END IF
+    ELSE IF (h(i1-1,i2)<h(i1,i2) .AND. h(i1+1,i2)<h(i1,i2) .AND. h(i1,i2+1)<h(i1,i2)) THEN !EI A
+       CALL RANDOM_NUMBER(r)
+       IF (r>.66) THEN
+          i1=i1+1
+       ELSE IF (r>0.33) THEN
+          i1=i1-1
+       ELSE 
+          i2=i2+1
+       END IF
+    ELSE IF (h(i1-1,i2)<h(i1,i2) .AND. h(i1,i2-1)<h(i1,i2) .AND. h(i1,i2+1)<h(i1,i2)) THEN !EI O
+       CALL RANDOM_NUMBER(r)
+       IF (r>.66) THEN
+          i2=i2+1
+       ELSE IF (r>0.33) THEN
+          i1=i1-1
+       ELSE 
+          i2=i2-1
+       END IF
+    ELSE IF (h(i1+1,i2)<h(i1,i2) .AND. h(i1,i2-1)<h(i1,i2) .AND. h(i1,i2+1)<h(i1,i2)) THEN !EI V
+       CALL RANDOM_NUMBER(r)
+       IF (r>.66) THEN
+          i1=i1+1
+       ELSE IF (r>0.33) THEN
+          i2=i2+1
+       ELSE 
+          i2=i2-1
+       END IF
+    ELSE IF (h(i1+1,i2)<h(i1,i2) .AND. h(i1,i2-1)<h(i1,i2)) THEN !OA
+       CALL RANDOM_NUMBER(r)
+       IF (r>.5) THEN
+          i1=i1+1
+       ELSE 
+          i2=i2-1
+       END IF
+    ELSE IF (h(i1+1,i2)<h(i1,i2) .AND. h(i1,i2+1)<h(i1,i2)) THEN !OY
+       CALL RANDOM_NUMBER(r)
+       IF (r>.5) THEN
+          i1=i1+1
+       ELSE 
+          i2=i2+1
+       END IF
+    ELSE IF (h(i1+1,i2)<h(i1,i2) .AND. h(i1-1,i2)<h(i1,i2)) THEN !OV
+       CALL RANDOM_NUMBER(r)
+       IF (r>.5) THEN
+          i1=i1+1
+       ELSE 
+          i1=i1-1
+       END IF
+    ELSE IF (h(i1-1,i2)<h(i1,i2) .AND. h(i1,i2+1)<h(i1,i2)) THEN !YV
+       CALL RANDOM_NUMBER(r)
+       IF (r>.5) THEN
+          i1=i1-1
+       ELSE 
+          i2=i2+1
+       END IF
+    ELSE IF (h(i1,i2+1)<h(i1,i2) .AND. h(i1,i2-1)<h(i1,i2)) THEN !YA
+       CALL RANDOM_NUMBER(r)
+       IF (r>.5) THEN
+          i2=i2+1
+       ELSE 
+          i2=i2-1
+       END IF
+    ELSE IF (h(i1-1,i2)<h(i1,i2) .AND. h(i1,i2-1)<h(i1,i2)) THEN !VA
+       CALL RANDOM_NUMBER(r)
+       IF (r>.5) THEN
+          i1=i1-1
+       ELSE 
+          i2=i2-1
+       END IF
+    ELSE IF (h(i1-1,i2)<h(i1,i2)) THEN !V
+       i1=i1-1
+    ELSE IF (h(i1+1,i2)<h(i1,i2)) THEN !O
+       i1=i1+1
+    ELSE IF (h(i1,i2-1)<h(i1,i2)) THEN !A 
+       i2=i2-1
+    ELSE IF (h(i1,i2+1)<h(i1,i2)) THEN !Y
+       i2=i2+1
+    ELSE 
+       relax_once = .FALSE.
+    END IF
+    
+    IF (i1==0) i1=N
+    IF (i1==N+1) i1=1
+    IF (i2==0) i2=N
+    IF (i2==N+1) i2=1
+  END FUNCTION relax_once
+
   FUNCTION random_site()
     INTEGER :: random_site
     REAL(KIND(1.d0)) :: r
